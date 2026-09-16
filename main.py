@@ -234,13 +234,13 @@ top10_sum = (
     df.groupby("영화명")
     .agg(
         총관객수=("일관객", "sum"),
-        진입일수=("날짜", "nunique"),  # 10위권 내에 등재된 날수
+        진입일수=("날짜", "nunique"),
     )
     .reset_index()
     .nlargest(10, "총관객수")
 )
 
-# 막대그래프 상단에 관객수가 가장 많은 영화가 오도록 오름차순 정렬 (Plotly y축 표시 순서 처리)
+# 막대그래프 상단에 관객수가 가장 많은 영화가 오도록 오름차순 정렬
 top10_sum = top10_sum.sort_values(by="총관객수", ascending=True)
 
 # 2. 가로 막대그래프(Horizontal Bar Chart) 생성
@@ -254,7 +254,7 @@ fig4 = px.bar(
     text_auto=",",
 )
 
-# 마우스 오버(Hover) 시 총 관객수와 10위권 진입 일수가 함께 표시되도록 설정
+# 마우스 오버 시 총 관객수와 10위권 진입 일수 표시
 fig4.update_traces(
     textposition="outside",
     marker_color="#2ca02c",
@@ -280,9 +280,79 @@ st.info(
 st.markdown("---")
 
 # ==========================================
-# [섹션 5] 향후 추가될 그래프 구역
+# [섹션 5] 월×요일별 일관객 합계 히트맵
 # ==========================================
-st.header("📌 5. (추가 예정 구역)")
+st.header("📌 5. 월별·요일별 관객수 분포 (히트맵)")
+
+# 1. 월 및 요일 컬럼 추출
+df_heatmap = df.copy()
+df_heatmap["월"] = df_heatmap["날짜"].dt.strftime("%m월")
+
+# 요일명을 한국어로 변환 및 월요일~일요일 순서 범주형 지정
+weekday_map = {
+    0: "월요일",
+    1: "화요일",
+    2: "수요일",
+    3: "목요일",
+    4: "금요일",
+    5: "토요일",
+    6: "일요일",
+}
+weekday_order = [
+    "월요일",
+    "화요일",
+    "수요일",
+    "목요일",
+    "금요일",
+    "토요일",
+    "일요일",
+]
+
+df_heatmap["요일"] = df_heatmap["날짜"].dt.weekday.map(weekday_map)
+
+# 2. 월, 요일별 일관객 합계 피벗 테이블 생성
+pivot_df = df_heatmap.pivot_table(
+    index="월", columns="요일", values="일관객", aggfunc="sum"
+).fillna(0)
+
+# 요일을 월요일~일요일 순서로 정렬
+pivot_df = pivot_df.reindex(columns=weekday_order)
+
+# 3. Plotly 히트맵(Heatmap) 생성
+fig5 = px.imshow(
+    pivot_df,
+    labels=dict(x="요일", y="월", color="총 관객수 (명)"),
+    title="월별 × 요일별 일관객 합계 히트맵",
+    color_continuous_scale="Reds",  # 색이 진할수록 높은 관객수
+    text_auto=",",  # 셀 안에 관객수 콤마 서식 표시
+)
+
+# 마우스 오버 툴팁 서식 지정
+fig5.update_traces(
+    hovertemplate="<b>월:</b> %{y}<br><b>요일:</b> %{x}<br><b>관객수 합계:</b> %{z:,}명<extra></extra>"
+)
+
+fig5.update_layout(
+    height=500,
+    xaxis_title="요일",
+    yaxis_title="월",
+)
+
+# 그래프 출력
+st.plotly_chart(fig5, use_container_width=True)
+
+# 💡 '이 그래프로 알 수 있는 것' 문구 작성 구역
+st.info(
+    "💡 **이 그래프로 알 수 있는 것:**\n\n"
+    "(여기에 분석 소감을 작성해 주세요. 예: 연중 특정 월의 주말(토·일)에 관객 몰림 현상이 가장 두드러지며, 평일 중 수요일 및 금요일에 관객수가 상승하는 경향을 확인할 수 있습니다.)"
+)
+
+st.markdown("---")
+
+# ==========================================
+# [섹션 6] 향후 추가될 그래프 구역
+# ==========================================
+st.header("📌 6. (추가 예정 구역)")
 st.caption(
     "앞으로 '시간'과 관련된 다양한 영화 데이터 그래프가 계속 추가될 영역입니다."
 )
