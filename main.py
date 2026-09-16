@@ -225,9 +225,64 @@ st.info(
 st.markdown("---")
 
 # ==========================================
-# [섹션 4] 향후 추가될 그래프 구역
+# [섹션 4] 전체 기간 일관객 TOP 10 가로 막대그래프
 # ==========================================
-st.header("📌 4. (추가 예정 구역)")
+st.header("📌 4. 전체 기간 관객수 TOP 10 영화")
+
+# 1. 영화별 일관객 합계 및 TOP 10 진입 일수 집계
+top10_sum = (
+    df.groupby("영화명")
+    .agg(
+        총관객수=("일관객", "sum"),
+        진입일수=("날짜", "nunique"),  # 10위권 내에 등재된 날수
+    )
+    .reset_index()
+    .nlargest(10, "총관객수")
+)
+
+# 막대그래프 상단에 관객수가 가장 많은 영화가 오도록 오름차순 정렬 (Plotly y축 표시 순서 처리)
+top10_sum = top10_sum.sort_values(by="총관객수", ascending=True)
+
+# 2. 가로 막대그래프(Horizontal Bar Chart) 생성
+fig4 = px.bar(
+    top10_sum,
+    x="총관객수",
+    y="영화명",
+    orientation="h",
+    title="기간 내 일관객 합계 TOP 10 영화",
+    labels={"총관객수": "총 관객수 (명)", "영화명": "영화 제목"},
+    text_auto=",",
+)
+
+# 마우스 오버(Hover) 시 총 관객수와 10위권 진입 일수가 함께 표시되도록 설정
+fig4.update_traces(
+    textposition="outside",
+    marker_color="#2ca02c",
+    customdata=top10_sum[["진입일수"]],
+    hovertemplate="<b>영화명:</b> %{y}<br><b>총 관객수:</b> %{x:,}명<br><b>10위권 진입 일수:</b> %{customdata[0]}일<extra></extra>",
+)
+
+fig4.update_layout(
+    xaxis_title="총 관객수 (명)",
+    yaxis_title="",
+    height=500,
+)
+
+# 그래프 출력
+st.plotly_chart(fig4, use_container_width=True)
+
+# 💡 '이 그래프로 알 수 있는 것' 문구 작성 구역
+st.info(
+    "💡 **이 그래프로 알 수 있는 것:**\n\n"
+    "(여기에 분석 소감을 작성해 주세요. 예: 누적 관객수가 높은 영화일수록 10위권 내에 오래 머물렀음을 알 수 있습니다.)"
+)
+
+st.markdown("---")
+
+# ==========================================
+# [섹션 5] 향후 추가될 그래프 구역
+# ==========================================
+st.header("📌 5. (추가 예정 구역)")
 st.caption(
     "앞으로 '시간'과 관련된 다양한 영화 데이터 그래프가 계속 추가될 영역입니다."
 )
