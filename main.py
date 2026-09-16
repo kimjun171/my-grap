@@ -1,5 +1,6 @@
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
 # Streamlit 페이지 기본 설정
@@ -122,12 +123,12 @@ fig2 = px.line(
     top5_df,
     x="날짜",
     y="일관객",
-    color="영화명",  # 영화별로 색상 구분 및 범례 생성
+    color="영화명",
     title="기간 내 관객수 상위 5개 영화의 일관객수 비교",
     labels={"날짜": "날짜", "일관객": "일일 관객수 (명)", "영화명": "영화 제목"},
 )
 
-# 마우스 오버(Hover) 서식 및 툴팁 설정
+# 마우스 오버(Hover) 서식 설정
 fig2.update_traces(
     hovertemplate="<b>영화명:</b> %{fullData.name}<br><b>날짜:</b> %{x|%Y-%m-%d}<br><b>관객수:</b> %{y:,}명<extra></extra>"
 )
@@ -139,7 +140,7 @@ fig2.update_layout(
     height=500,
     legend=dict(
         title_text="영화 제목 (클릭 시 ON/OFF)",
-        orientation="h",  # 범례를 가로 형태로 배치
+        orientation="h",
         yanchor="bottom",
         y=1.02,
         xanchor="right",
@@ -159,9 +160,74 @@ st.info(
 st.markdown("---")
 
 # ==========================================
-# [섹션 3] 향후 추가될 그래프 구역
+# [섹션 3] 날짜별 TOP 10 총 관객수 영역 그래프
 # ==========================================
-st.header("📌 3. (추가 예정 구역)")
+st.header("📌 3. 날짜별 박스오피스 TOP 10 총 관객수 추이")
+
+# 1. 날짜별 일관객 합계 구하기
+daily_sum = (
+    df.groupby("날짜")["일관객"]
+    .sum()
+    .reset_index()
+    .sort_values("날짜")
+)
+
+# 2. 영역 그래프(Area Chart) 생성
+fig3 = px.area(
+    daily_sum,
+    x="날짜",
+    y="일관객",
+    title="날짜별 박스오피스 TOP 10 총 관객수 (영역 그래프)",
+    labels={"날짜": "날짜", "일관객": "TOP 10 총 관객수 (명)"},
+)
+
+# 마우스 오버 서식 지정
+fig3.update_traces(
+    hovertemplate="<b>날짜:</b> %{x|%Y-%m-%d}<br><b>TOP 10 총 관객수:</b> %{y:,}명<extra></extra>",
+    line_color="#2b5c8f",
+    fillcolor="rgba(43, 92, 143, 0.3)",
+)
+
+# 3. 관객수 합계 상위 3일 구하기
+top3_days = daily_sum.nlargest(3, "일관객")
+
+# 4. 상위 3일을 그래프 위에 강조 포인트(Scatter) 및 날짜 텍스트로 표시
+fig3.add_trace(
+    go.Scatter(
+        x=top3_days["날짜"],
+        y=top3_days["일관객"],
+        mode="markers+text",
+        name="관객수 Peak Top 3",
+        text=top3_days["날짜"].dt.strftime("%Y-%m-%d"),
+        textposition="top center",
+        marker=dict(size=12, color="red", symbol="diamond"),
+        hovertemplate="<b>[Peak Top 3]</b><br>날짜: %{x|%Y-%m-%d}<br>관객수: %{y:,}명<extra></extra>",
+    )
+)
+
+fig3.update_layout(
+    xaxis_title="날짜",
+    yaxis_title="총 관객수 (명)",
+    hovermode="x unified",
+    height=500,
+    showlegend=False,
+)
+
+# 그래프 출력
+st.plotly_chart(fig3, use_container_width=True)
+
+# 💡 '이 그래프로 알 수 있는 것' 문구 작성 구역
+st.info(
+    "💡 **이 그래프로 알 수 있는 것:**\n\n"
+    "(여기에 분석 소감을 작성해 주세요. 예: 연휴나 명절 기간에 박스오피스 전체 관객수가 크게 솟구치는 피크를 형성합니다.)"
+)
+
+st.markdown("---")
+
+# ==========================================
+# [섹션 4] 향후 추가될 그래프 구역
+# ==========================================
+st.header("📌 4. (추가 예정 구역)")
 st.caption(
     "앞으로 '시간'과 관련된 다양한 영화 데이터 그래프가 계속 추가될 영역입니다."
 )
